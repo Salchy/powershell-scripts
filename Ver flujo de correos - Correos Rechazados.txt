@@ -1,0 +1,61 @@
+-- Para obtener los correos que le llegan a un usuario
+
+$inicioFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$stopFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$correo = "correo@ejemplo.com.ar"
+Get-MessageTrackingLog -ResultSize Unlimited -Start $inicioFiltro -End $stopFiltro -Recipients $correo | Select-Object Timestamp, EventId, Source, MessageSubject, Sender, Recipients, MessageId
+
+-- Tambien podemos ver los correos que mandó alguienl, añadiendo la siguiente clausula:
+{ $_.Sender -Like "ejemp*"}
+Notese el comodin para buscar coincidencias, o hacer una coincidencia exacta:
+{ $_.Sender -eq "ejemplo@ejemplo.com.ar"}
+
+Quedando:
+$inicioFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$stopFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$correo = "correo@ejemplo.com.ar"
+Get-MessageTrackingLog -ResultSize Unlimited -Start $inicioFiltro -End $stopFiltro | Select-Object Timestamp, EventId, Source, MessageSubject, Sender, Recipients, MessageId | Where-Object {$_.Sender -eq $correo}
+
+-----------------------------------------
+
+Los correos rechazados, figuran como Fail, si queremos buscar sólo los rechazados:
+$inicioFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$stopFiltro = Get-Date "MM/DD/YYYY 08:30:00"
+$correo = "correo@ejemplo.com.ar"
+Get-MessageTrackingLog -ResultSize Unlimited -EventID FAIL -Start $inicioFiltro -End $stopFiltro -Recipients $correo | Select-Object Timestamp, EventId, Source, MessageSubject, Sender, Recipients, MessageId
+
+-- Si quiero ver detalles de algun correo detallado, me fijo el campo 'EventData' del MessageId que esta rechazado
+
+Get-MessageTrackingLog -ResultSize Unlimited -MessageId MENSAJEID | Format-List
+
+Nos va a arrojar un monton de información sobre toda la traza de ese correo, prestar atención a los detalles
+del campo 'EventData':
+
+Get-MessageTrackingLog -ResultSize Unlimited -MessageId MENSAJEID | Select-Object Soruce, EventId, EventData | Format-List
+
+Buscar algo parecido a action=DeleteMessage o action=RejectMessage
+
+Si hay alguna regla que lo esté rechazando, nos díra el ruleId, tendremos que buscar las reglas de transporte que tengamos creados
+
+Get-TransportRule (Ver documento de reglas de transporte)
+-----------------------------------
+
+- Explicación de resultados:
+- Columna EventID:
+- AGENTINFO: Datos personalizados
+- DELIVER: Llegó el correo al buzón local
+- DELIVERFAIL: Un agente intentó entregar un mensaje a una carpeta que no existe en el buzon
+- DROP: Se quitó un mensaje sin una notificación de estado de entrega.
+- FAIL: Error al entregar el mensaje. Los orígenes incluyen SMTP, DNS, QUEUE y ROUTING.
+- RECEIVE: Recibió un mensaje por medio de SMTP (Si el Source fue SMTP) o se envio un mensaje de un buzon local al protocolo SMTP (Si el Source fue STOREDRIVER)
+- SUBMIT: El servicio de entrega de transporte de buzones de correo transmitió correctamente el mensaje al servicio de transporte
+- SEND: SMTP envió un mensaje entre servicios de transporte.
+- HAREDIRECTFAIL: No se ha podido crear un mensaje de instantánea. Los detalles se almacenan en el campo source-context.
+
+- Columna Source (El origen (fuente o desencadenante)):
+- AGENT: El evevento se desencadenó desde Agente de transporte.
+- SMTP: El evento se desencadenó por Envio o Recepcio SMTP
+- STOREDRIVER: El evento se desencadenó desde un buzun de correo del servidor local
+
+Fuentes:
+https://learn.microsoft.com/es-es/exchange/mail-flow/transport-logs/message-tracking?view=exchserver-2019#source-values-in-the-message-tracking-log

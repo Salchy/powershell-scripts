@@ -1,0 +1,11 @@
+Para ver las reglas de transporte que tenemos creados en el exchange:
+
+Get-TransportRule
+
+Para ver el listado y las ID de cada una de las reglas, para ver cual es la que impacta en el rechazo:
+
+Get-TransportRule | Select Name, Guid | Format-List
+
+Si queremos realizar una busqueda:
+
+Get-TransportRule | Where-Object {$_.Guid -eq "INSERTARID"} | Format-List
